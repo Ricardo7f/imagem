@@ -15,7 +15,7 @@
   button{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:9px 14px;font-size:14px;cursor:pointer}
   button.sec{background:transparent;color:var(--ac);border:1px solid var(--br)}
   button.wa+button.wa{margin-left:12px}
-  button.cp,button.wa{background:none;border:0;padding:0;font:inherit;color:var(--ac);text-decoration:underline;cursor:pointer}
+  button.wa{background:none;border:0;padding:0;font:inherit;color:var(--ac);text-decoration:underline;cursor:pointer}
   .bar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;align-items:center}
   #status{color:var(--mut);font-size:13px}
   .wrap{overflow-x:auto}
@@ -47,7 +47,7 @@
 
 <div class="wrap">
 <table>
-  <thead><tr><th>Enviada em</th><th>Foto</th><th>Arquivo</th><th>Latitude</th><th>Longitude</th><th>Endereço</th><th>Status</th><th>Copiar</th><th>Mapa</th><th>WhatsApp</th></tr></thead>
+  <thead><tr><th>Enviada em</th><th>Foto</th><th>Arquivo</th><th>Latitude</th><th>Longitude</th><th>Endereço</th><th>Status</th><th>Mapa</th><th>Copiar</th></tr></thead>
   <tbody id="rows"></tbody>
 </table>
 </div>
@@ -637,7 +637,6 @@ function render(){
       <td><input class="c" data-i="${i}" data-k="lon" value="${found ? r.lon : ''}"></td>
       <td>${addrCell(r, found)}</td>
       <td class="st ${found ? (r.fixed ? 'warn' : 'ok') : 'warn'}">${found ? (r.fixed ? 'Confira os números' + (r.motivo ? '<br><small>' + esc(r.motivo) + '</small>' : '') : 'OK' + (r.ndig ? '<br><small>' + r.ndig + ' dígitos conferidos</small>' : '')) : 'Não achei – digite'}</td>
-      <td>${found ? `<button class="cp" data-i="${i}">Copiar</button>` : ''}</td>
       <td>${found ? `<a target="_blank" href="${svLink(r.lat, r.lon)}">Abrir</a>` : ''}</td>
       <td>${found ? `<button class="wa" data-i="${i}" data-t="foto">Foto</button><button class="wa" data-i="${i}" data-t="link">Link</button>` : ''}</td>`;
     rows.appendChild(tr);
@@ -691,20 +690,6 @@ rows.addEventListener('click', e => {
   lb.classList.add('on');
 });
 lb.onclick = () => { lb.classList.remove('on'); lbimg.src = ''; };
-
-rows.addEventListener('click', async e => {
-  const b = e.target.closest('.cp');
-  if(!b) return;
-  const r = data[b.dataset.i];
-  const txt = `${r.lat}, ${r.lon}`;
-  try{ await navigator.clipboard.writeText(txt); }
-  catch(_){
-    const t = document.createElement('textarea'); t.value = txt;
-    document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove();
-  }
-  b.textContent = 'Copiado ✔';
-  setTimeout(() => { b.textContent = 'Copiar'; }, 1500);
-});
 
 rows.addEventListener('change', e => {
   const el = e.target;
