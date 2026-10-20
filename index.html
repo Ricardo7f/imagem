@@ -619,51 +619,9 @@ async function runGeo(){
   geoRunning = false;
 }
 
-// ---- Street View disponível? (sem API/chave: consulta o mesmo serviço que o Google Maps usa) ----
-const svCache = new Map(), svPending = new Set();
-const svKey = (lat, lon) => `${(+lat).toFixed(6)},${(+lon).toFixed(6)}`;
-
-// true = tem Street View, false = não tem, undefined = ainda não sei (usa Street View como antes)
-function svStatus(lat, lon){ return svCache.get(svKey(lat, lon)); }
-
-function svQuery(lat, lon){
-  return new Promise(resolve => {
-    const cb = '__sv' + Math.random().toString(36).slice(2);
-    const sc = document.createElement('script');
-    let done = false;
-    const end = v => { if(done) return; done = true; delete window[cb]; sc.remove(); resolve(v); };
-    window[cb] = d => {
-      try{
-        if(d && d[0] && d[0][0] === 5) return end(false);   // "Search returned no images"
-        if(d && d[1]) return end(true);
-      }catch(_){}
-      end(undefined);
-    };
-    sc.onerror = () => end(undefined);
-    setTimeout(() => end(undefined), 8000);
-    const pb = `!1m5!1sapiv3!5sUS!11m2!1m1!1b0!2m4!1m2!3d${lat}!4d${lon}!2d50!3m18!2m2!1sen!2sGB!9m1!1e2!11m12!1m3!1e2!2b1!3e2!1m3!1e3!2b1!3e2!1m3!1e10!2b1!3e2!4m6!1e1!1e2!1e3!1e4!1e8!1e6`;
-    sc.src = `https://maps.googleapis.com/maps/api/js/GeoPhotoService.SingleImageSearch?pb=${pb}&callback=${cb}`;
-    document.head.appendChild(sc);
-  });
-}
-
-async function checkSV(lat, lon){
-  const k = svKey(lat, lon);
-  if(svCache.has(k) || svPending.has(k)) return;
-  svPending.add(k);
-  const v = await svQuery(lat, lon);
-  svPending.delete(k);
-  if(v === undefined){ svCache.set(k, undefined); return; }  // não deu para saber: mantém Street View
-  svCache.set(k, v);
-  render();
-}
-
-// Street View quando existir; senão, mapa normal
+// Link do mapa normal
 function svLink(lat, lon){
-  if(svStatus(lat, lon) === false){
-    return `https://www.google.com/maps/place/${lat},${lon}/@${lat},${lon},17z`;
-  }
-  return `https://www.google.com/maps?q=&layer=c&cbll=${lat},${lon}&cbp=11,0,0,0,0`;
+  return `https://www.google.com/maps/place/${lat},${lon}/@${lat},${lon},17z`;
 }
 
 function render(){
@@ -671,7 +629,6 @@ function render(){
   data.forEach((r, i) => {
     const tr = document.createElement('tr');
     const found = r.lat !== null && r.lon !== null && !isNaN(r.lat) && !isNaN(r.lon);
-    if(found) checkSV(r.lat, r.lon);
     tr.innerHTML = `
       <td>${r.sent || '-'}</td>
       <td>${r.url ? `<img src="${r.url}" data-i="${i}">` : ''}</td>
@@ -680,7 +637,7 @@ function render(){
       <td><input class="c" data-i="${i}" data-k="lon" value="${found ? r.lon : ''}"></td>
       <td>${addrCell(r, found)}</td>
       <td class="st ${found ? (r.fixed ? 'warn' : 'ok') : 'warn'}">${found ? (r.fixed ? 'Confira os números' + (r.motivo ? '<br><small>' + esc(r.motivo) + '</small>' : '') : 'OK' + (r.ndig ? '<br><small>' + r.ndig + ' dígitos conferidos</small>' : '')) : 'Não achei – digite'}</td>
-      <td>${found ? `<a target="_blank" href="${svLink(r.lat, r.lon)}">${svStatus(r.lat, r.lon) === false ? 'Abrir mapa' : 'Abrir'}</a>` : ''}</td>
+      <td>${found ? `<a target="_blank" href="${svLink(r.lat, r.lon)}">Abrir</a>` : ''}</td>
       <td>${found ? `<button class="wa" data-i="${i}" data-t="foto">Foto</button><button class="wa" data-i="${i}" data-t="link">Link</button>` : ''}</td>`;
     rows.appendChild(tr);
   });
